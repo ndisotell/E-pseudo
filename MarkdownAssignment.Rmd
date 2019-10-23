@@ -1,0 +1,121 @@
+---
+title: "Markdown Assignment"
+author: "N. Disotell"
+date: "8/28/2019"
+output: html_document 
+
+---
+
+```{r setup, include=FALSE}
+#Setup area to get all the necessary packages before the rest of the code
+library(tidyverse) #importing, tidying, plotting data
+library(knitr) #making tables and captioning 
+library(leaflet)#making maps 
+library(ggplot2)#creating figures
+library(colorspace)
+library(dplyr)
+library(readxl)
+#knitr::opts_chunk$set(fig.width = 5, fig.asp = 1/3) #force figures to be a certain size and aspect ratio
+#opts_chunk$set(echo=FALSE)   #can force hide all code in the output; disables 'code folding'
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+[link](https://rmarkdown.rstudio.com/lesson-15.html) for help with quick cheetsheet for using markdown most effectively!
+[link](https://yihui.name/knitr/demos/) also to assist in understanding all that knitr is capable of.
+
+<span style="color:#ff4a6a">First, we create a **scatterplot** to get our first visual of the data for male TL compared by collection year.</span>
+
+```{r JMIH_R_Tables, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(JMIH_R_Tables,
+       aes(x = Year, y = MaleTL)) +
+  geom_point() +
+  ylab("Male Total Length (mm)") +
+  theme_classic()
+```
+
+<span style="color:#00e7f3">Next, a visual aid slightly more informative than a **scatterplot** the *boxplot*.</span>
+
+```{r JMIH_R_Tables, echo=FALSE, message=FALSE, warning=FALSE}
+JMIH_R_Tables <- read_excel("JMIH R Tables.xlsx", 
+                            sheet = "Avg. guarding male length", 
+                            col_types = c("text", "numeric"))
+ggplot(JMIH_R_Tables,
+       aes(x = Year, y = MaleTL)) +
+  geom_point() +
+  ylab("Male Total Length (mm)") +
+  theme_bw()
+
+ggplot(JMIH_R_Tables, aes(x=Year, y=MaleTL)) + geom_boxplot() + theme_classic(base_size = 14) + ylab("Male TL (mm)") + aes(fill= Year) + scale_fill_manual(values=c("#3E9DD1", "#E5A859"), guide=FALSE) + scale_y_continuous(breaks=seq(60, 95, 5)) + theme(axis.text.x = element_text(colour = 'black',  size = 12, face = 'bold')) + theme(axis.text.y = element_text(colour='black', size=12, face="bold")) + theme(axis.text.x = element_text(face="bold", color="black", size=12),axis.text.y = element_text(face="bold", color="black",size=12)) +theme(axis.text=element_text(size=12),axis.title=element_text(size=12,face="bold"))
+
+```
+
+<span style="color:blue">Now for a comparison of the average number of clutches on a nest rock compared by collection year.</span>
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+JMIH_R_Tables <- read_excel("JMIH R Tables.xlsx", 
+                            sheet = "Avg. Clutch size", col_types = c("text", 
+                                                                      "numeric"))
+B <- table(JMIH_R_Tables$Year, JMIH_R_Tables$ClutchSize)
+C <- as.data.frame(B)
+
+colnames(C)
+names(C)[names(C) == "Var1"] <- "Year"
+names(C)[names(C) == "Var2"] <- "ClutchSize"
+names(C)[names(C) == "Freq"] <- "Total_number"
+C
+
+legend_title <- "Clutch Size"
+ggplot(C, aes(x = Year, y =Total_number, ylab="Frequency", fill=ClutchSize)) + geom_histogram(stat = "identity", position = 'dodge', binwidth = 5) + 
+  theme_classic() + scale_fill_manual("Clutch Size", values = c("1"="#3E9DD1", "2"="#E5A859", "3"="#A57296")) + labs(x="Year",y="Frequency of Clutch Size") + 
+  theme(axis.line = element_line(colour = "black"),axis.text.x = element_text(face="bold", color="black", size=12),axis.text.y = element_text(face="bold", color="black", size=12)) + 
+  scale_y_continuous(breaks=seq(0, 20, 2)) + theme(axis.text.x = element_text(face="bold", color="black", size=12),axis.text.y = element_text(face="bold", color="black",size=12)) +
+  theme(axis.title.x = element_text(size = 12, face = "bold"), axis.title.y = element_text(size = 12,face = "bold")) +theme(legend.text=element_text(size=10, face = "bold"), legend.title=element_text(size=12, face="bold"))
+                                                       
+```
+
+<span style="color:#00cf00">Now for some summary tables to give a different depiction.</span>
+
+```{r JMIH_R_Tables, warning=TRUE}
+JMIH_R_Tables <- read_excel("JMIH R Tables.xlsx", 
+                            sheet = "Avg. guarding male length", 
+                            col_types = c("text", "numeric"))
+JMIH_R_Tables %>% group_by(Year) %>%
+  summarise(meanMaleTL = mean(MaleTL))
+
+males<-JMIH_R_Tables %>%
+  group_by (Year) %>%
+  summarise(
+    nMaleTL = n(),
+    meanMaleTL = mean(MaleTL),
+    sdMaleTL = sd(MaleTL))
+kable(males, format = "pandoc", caption = 'Table 2. A summary kable displaying number, mean, and standard deviation for both years.')
+```
+
+```{r JMIH_R_Tables}
+JMIH_R_Tables <- read_excel("JMIH R Tables.xlsx", 
+                            sheet = "Avg. Clutch size", col_types = c("text", 
+                                                                      "numeric"))
+clutches<-JMIH_R_Tables %>%
+  group_by (Year) %>%
+  summarise(
+    n = n(),
+    meanClutchSize = mean(ClutchSize),
+    sdClutchSize = sd(ClutchSize))
+kable(clutches, format = "pandoc", caption = 'Table 2. A summary kable displaying number, mean, and standard deviation for clutch size by year.')
+```
+
+<span style="color:#f57a00">And for funsies I ran an anova to try and see if there was any noticable correlation between t he size of the male and how many eggs were in the guarded nest.</span>
+
+```{r JMIH_R_Tables}
+MIH_R_Tables <- read_excel("JMIH R Tables.xlsx", 
+                            sheet = "Number of Eggs to male size", 
+                            col_types = c("skip", "numeric", "numeric"))
+
+MaleEgg_lm <- lm(TotalEggs ~ MaleSize, data=a)
+anova(MaleEgg_lm)
+```
+
+map coding
+
